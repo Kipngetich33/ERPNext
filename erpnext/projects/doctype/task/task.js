@@ -104,3 +104,52 @@ frappe.ui.form.on("Task", {
 
 cur_frm.add_fetch('task', 'subject', 'subject');
 cur_frm.add_fetch('task', 'project', 'project');
+
+
+/* The code below are custom scripts*/
+// =================================================================================================
+
+/*general functions sections*/
+// =================================================================================================
+
+// function that sets custom buttons for the tasks
+function add_custom_buttons(button_name,new_status){
+    cur_frm.add_custom_button(__(button_name), function(){
+        
+        // if(new_status == "Supercede"){
+        //  console.log("super seeed")
+        //  if(cur_frm.doc.status == "Terminated" || cur_frm.doc.status == "Inactive"){
+        //      alert_function("Do you want to supercede this account",supercede_function)
+                
+        //  }
+        //  else{
+        //      // alert the user that the account cannot be superseded
+        //      alert_message("You Cannot Supercede This Account")
+        //  }
+        // }
+        // else{
+        //  cur_frm.set_value("status", new_status)
+        //  cur_frm.save();
+        // }
+    },__("Task Management Menu"));
+}
+
+
+// =================================================================================================
+/*end of the general function section*/
+
+// form triggered functions sections
+// =================================================================================================
+
+// the function below is the refresh triggered function
+frappe.ui.form.on("Task", "refresh", function(frm) {
+    // add task management buttons menus
+    add_custom_buttons("Update Survey Data","Update")
+    add_custom_buttons("Account Registration","Account")
+    add_custom_buttons("Issue Meter","Stock Entry")
+    add_custom_buttons("Meter Installation","Install")
+    add_custom_buttons("GIS Data","GIS")
+    add_custom_buttons("Account Activation","Activate")
+});
+// =================================================================================================
+/* end of the custom scripts*/

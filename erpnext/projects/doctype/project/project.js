@@ -145,3 +145,58 @@ frappe.ui.form.on("Project", "validate", function (frm) {
 		});
 	}
 });
+
+/*the code below are custom codes*/
+
+// this is the general function section
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+// global variable
+var list_of_tasks = ["Survey","Account Registration","Issue Meter","Meter Connection","Account Activation"]
+
+
+function add_tasks(){
+	// adding tasks
+	for(var i=0;i< list_of_tasks.length;i++){
+		var new_row = cur_frm.add_child("tasks");
+		cur_frm.doc.tasks[i].title= list_of_tasks[i]
+
+	}
+	cur_frm.refresh_field("tasks")
+}
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// this is the end of general function section
+
+
+/*this is the function triggered section*/
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+frappe.ui.form.on("Project", "refresh", function(frm) {
+
+	if(cur_frm.doc.system_no){
+		var current_system_no = cur_frm.doc.system_no
+		// get the customer from 
+		frappe.call({
+			method: "frappe.client.get",
+			args: {
+				doctype:"Customer",
+				filters:{"system_no":cur_frm.doc.system_no}
+			},
+			callback: function(response) {
+				frm.set_value("project_name",response.message.customer_name)
+				frm.set_value("project_type","External")
+				frm.set_value("department","All Departments")
+
+				// adding tasks
+				add_tasks()
+			}
+		})
+	}
+	else{
+		// do nothing since the field does not exist
+	}
+})
+
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+/*end of the function triggered function*/
