@@ -132,7 +132,6 @@ frappe.ui.form.on("Project", "validate", function (frm) {
 				"second_email": frm.doc.second_email,
 				"daily_time_to_send": frm.doc.daily_time_to_send,
 				"weekly_time_to_send": frm.doc.weekly_time_to_send
-
 			},
 			callback: function (r) {
 				frm.set_value("from", r.message.from1);
@@ -156,13 +155,33 @@ var list_of_tasks = ["Survey","Account Registration","Issue Meter","Meter Connec
 
 
 function add_tasks(){
-	// adding tasks
-	for(var i=0;i< list_of_tasks.length;i++){
-		var new_row = cur_frm.add_child("tasks");
-		cur_frm.doc.tasks[i].title= list_of_tasks[i]
-
+	// check it tasks already exists
+	var current_tasks_on_form = cur_frm.doc.tasks
+	console.log("tasks form")
+	if(current_tasks_on_form){
+		// task rows already defined check if tasks exist
+		if(current_tasks_on_form.length>0){
+			// tasks already exists on form
+			console.log("task already on form")
+		}
+		else{
+			console.log("tasks not on form")
+			// adding tasks
+			for(var i=0;i< list_of_tasks.length;i++){
+				var new_row = cur_frm.add_child("tasks");
+				cur_frm.doc.tasks[i].title = list_of_tasks[i]
+			}
+		}
 	}
-	cur_frm.refresh_field("tasks")
+	else{
+		// no tasks has been added to the table first time
+		// adding tasks
+		for(var i=0;i< list_of_tasks.length;i++){
+			var new_row = cur_frm.add_child("tasks");
+			cur_frm.doc.tasks[i].title = list_of_tasks[i]
+		}
+		cur_frm.refresh()		
+	}
 }
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -184,12 +203,18 @@ frappe.ui.form.on("Project", "refresh", function(frm) {
 				filters:{"system_no":cur_frm.doc.system_no}
 			},
 			callback: function(response) {
-				frm.set_value("project_name",response.message.customer_name)
-				frm.set_value("project_type","External")
-				frm.set_value("department","All Departments")
-
-				// adding tasks
+				if(cur_frm.doc.project_name){
+					// do nothing
+				}
+				else{
+					frm.set_value("project_name",response.message.customer_name +' '+ response.message.system_no +" Connection")
+					frm.set_value("project_type","External")
+					frm.set_value("department","All Departments")
+				}
+		
+				// add tasks
 				add_tasks()
+				
 			}
 		})
 	}
