@@ -1109,6 +1109,7 @@ var rowcount = 0;
 var currentrow = 0;
 var customer_meter_no
 var disconnection_profiles
+var defined_flat_rate = "0-6"
 // 
 // function that adds rows to items child table
 function add_rows_and_values(i,current_item_name){
@@ -1123,6 +1124,120 @@ function alert_message(message_to_print){
 }
 
 
+// function that sets the general customer details
+function set_general_details(data){
+	cur_frm.set_value("area",data.message.area);
+	cur_frm.set_value("zone",data.message.zone);
+	cur_frm.set_value("route",data.message.route);
+	cur_frm.set_value("tariff_category",data.message.customer_type);
+	cur_frm.set_value("disconnection_profile",data.message.disconnection_profile);
+	cur_frm.set_value("tel_no",data.message.tel_no);
+	cur_frm.set_value("account_no",data.message.new_account_no);
+	cur_frm.set_value("territory",data.message.territory);
+}
+
+			
+// function that adds rows to the items child table
+function add_row_and_values(i,list_of_items,units_within_category){
+	cur_frm.grids[0].grid.add_new_row(null,null,false);
+	cur_frm.refresh_field("items");
+	
+	if(list_of_items[i].name == defined_flat_rate){
+		take_units(1)
+	}
+	else{
+		take_units(units_within_category)
+	}
+
+	function take_units(units_within_category){
+		var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
+		newrow.item_code= list_of_items[i].name
+		newrow.qty = units_within_category
+		newrow.item_name= list_of_items[i].name
+		newrow.description= list_of_items[i].name
+		newrow.uom='m3'
+		newrow.income_account= "Cost of Goods Sold - UL"
+		newrow.uom_conversion_factor= 1
+	}
+	
+}
+
+
+// functions that adds the meter rent based on the type of customer
+function add_meter_rent(tariff_category){
+
+	// get customer meter type
+	frappe.call({
+		"method": "frappe.client.get_list",
+		args:{	
+			doctype: "Item",
+			filters: {
+				type_of_customer:cur_frm.doc.tariff_category,
+				type_of_item:"Meter"
+			},
+			fields:["name"]
+		},
+		callback: function(response) {	
+			// add a new row for meter rent
+			cur_frm.grids[0].grid.add_new_row(null,null,false);
+			cur_frm.refresh_field("items");
+			var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
+			newrow.item_code= response.message[0].name
+			newrow.qty = 1
+			newrow.item_name= response.message[0].name
+			newrow.description= response.message[0].name
+			newrow.uom='m3'
+			newrow.income_account= "Cost of Goods Sold - UL"
+			newrow.uom_conversion_factor= 1
+		}
+	});
+	
+}
+
+
+// function that loops through the list of tarrifs and find 
+// those applicable to the consumption
+function loop_through_tariffs(response){
+	cur_frm.clear_table("items"); 
+	cur_frm.refresh_field("items");
+	
+	// sort the values using max value
+	var list_of_items = response.message
+	list_of_items.sort(function(a,b){return a.max_quantity - b.max_quantity});
+	
+	// looping throough list of items(tarrifs)
+	for(var i=0;i<list_of_items.length;i++){
+		var current_item = list_of_items[i]
+		if(cur_frm.doc.consumption){
+			if(cur_frm.doc.consumption >=current_item.min_quantity){
+				var units_within_category = cur_frm.doc.consumption - current_item.min_quantity
+				if(units_within_category > 0 ){
+					if(units_within_category>=current_item.max_quantity){
+						add_row_and_values(i,list_of_items,current_item.difference_btw_max_and_min)
+					}
+					else{
+						add_row_and_values(i,list_of_items,units_within_category +1)
+					}
+				}
+				else if(units_within_category == 0 && current_item.name == defined_flat_rate){
+					add_row_and_values(i,list_of_items,current_item.difference_btw_max_and_min)
+				}
+				else{
+					// do nothing because not units are found within category
+				}
+			}
+		}
+		else{
+			alert_message("Consumption is Not Given")
+		}
+		
+	}
+
+	// add meter rent here
+	add_meter_rent(cur_frm.tariff_category)
+}
+
+
 // function that get tarrifs and add values to items
 function add_items(){
 	// check is tariff category is defined
@@ -1132,47 +1247,14 @@ function add_items(){
 			args:{	
 				doctype: "Item",
 				filters: {
-					type_of_customer:cur_frm.doc.tariff_category
+					type_of_customer:cur_frm.doc.tariff_category,
+					type_of_item:"Tariff"
 				},
 				fields:["name","item_group","max_quantity","min_quantity","difference_btw_max_and_min"]
 			},
 			callback: function(response) {	
-				cur_frm.clear_table("items"); 
-				cur_frm.refresh_field("items");
-				
-				// sort the values using max value
-				var list_of_items = response.message
-				list_of_items.sort(function(a,b){return a.max_quantity - b.max_quantity});
-				
-
-				for(var i=0;i<list_of_items.length;i++){
-					var current_item = list_of_items[i]
-					if(cur_frm.doc.consumption >=current_item.min_quantity){
-						var units_within_category = cur_frm.doc.consumption - current_item.min_quantity
-						if(units_within_category > 0){
-							
-							// add row and value
-							cur_frm.grids[0].grid.add_new_row(null,null,false);
-							cur_frm.refresh_field("items");
-							var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-							newrow.item_code= list_of_items[i].name
-							newrow.qty = units_within_category
-							newrow.item_name= list_of_items[i].name
-							newrow.description= list_of_items[i].name
-							newrow.uom='m3'
-							newrow.income_account= "Cost of Goods Sold - UL"
-							newrow.uom_conversion_factor= 1
-
-
-						}
-						else{
-							// do nothing because not units are found within category
-						}
-					}
-				}
-				
-				
-				
+				// looping through the list of tarrifs
+				loop_through_tariffs(response)
 			}
 		});
 	}
@@ -1181,35 +1263,6 @@ function add_items(){
 	}
 } 
 
-/*function that sets the customer details when sales invoice
-form is opened*/
-function set_customer_details(){
-	frappe.call({
-		"method": "frappe.client.get",
-		args: {
-			doctype: "Customer",
-			filters: {"Name":cur_frm.doc.customer} 
-		},
-		callback: function (data) {
-			// set customer details and readings
-			cur_frm.set_value("area",data.message.area);
-			cur_frm.set_value("zone",data.message.zone);
-			cur_frm.set_value("route",data.message.route);
-			cur_frm.set_value("tariff_category",data.message.customer_type);
-			cur_frm.set_value("disconnection_profile",data.message.disconnection_profile);
-			cur_frm.set_value("tel_no",data.message.tel_no);
-			cur_frm.set_value("account_no",data.message.new_account_no);
-			cur_frm.set_value("territory",data.message.territory);
-
-			// add values to child table item
-			add_items()
-
-			/* get the next customer from meter reading capture*/
-			// get_the_next_customer()
-
-		}
-	})
-}
 
 /* function that creates a new sales invoice once the current one is saved
 allowing it to loop through all the list of customer e.g from meter reading
@@ -1247,6 +1300,23 @@ function get_the_next_customer(){
 	}});
 }
 
+
+/*function that sets the customer details when sales invoice
+form is opened*/
+function set_customer_details(){
+	frappe.call({
+		"method": "frappe.client.get",
+		args: {
+			doctype: "Customer",
+			filters: {"Name":cur_frm.doc.customer} 
+		},
+		callback: function (data) {
+			set_general_details(data) /* set customer details and readings*/
+			add_items() /*add values to child table items*/
+			get_the_next_customer()/* get the next customer from meter reading capture*/
+		}
+	})
+}
 
 /* end of the general functions section
 // =================================================================================================
