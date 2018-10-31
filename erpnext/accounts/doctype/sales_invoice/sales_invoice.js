@@ -1189,6 +1189,9 @@ function add_meter_rent(tariff_category){
 			newrow.uom='m3'
 			newrow.income_account= "Cost of Goods Sold - UL"
 			newrow.uom_conversion_factor= 1
+
+			// once the meter rent row and value is set save the form
+			cur_frm.save()
 		}
 	});
 	
@@ -1282,13 +1285,14 @@ function get_the_next_customer(){
 				if( rowcount < meter_reading_sheet_table.length-1 ){
 					var current_customer_details = meter_reading_sheet_table[rowcount]
 					frappe.route_options = {
-						"previous_reading":current_customer_details.previous_reading,
-						"current_reading":current_customer_details.readings,
-						"consumption":current_customer_details.consumption,
+						"previous_reading":current_customer_details.previous_manual_reading,
+						"current_reading":current_customer_details.current_manual_readings,
+						"consumption":current_customer_details.manual_consumption,
 						"type_of_bill":current_customer_details.type_of_bill,
 						"billing_period":cur_frm.doc.billing_period,
 						"type_of_invoice":"bill",
-						"customer":current_customer_details.customer_name
+						"customer":current_customer_details.customer_name,
+						"tariff_category":current_customer_details.type_of_customer
 					}
 				
 					frappe.set_route("Form", "Sales Invoice","New Sales Invoice currentrow")
@@ -1330,366 +1334,21 @@ filled*/
 
 /*this is the refresh function triggered by refreshing the form*/
 frappe.ui.form.on("Meter Reading Capture", "refresh", function(frm) {
-	console.log("refresh functionality")
+	console.log("refreshing")
 });
 
 frappe.ui.form.on("Meter Reading Capture", "onload", function(frm) {
 	console.log("onload functionality")
 });
 
-// frappe.ui.form.on("Sales Invoice", {
-// 	onload: function(frm){ 
-// 		frappe.call({
-// 			"method": "frappe.client.get",
-// 			args: {
-// 				doctype: "Billing Period",
-// 				filters: {"Name":frm.doc.billing_period}
-// 			},
-
-// 			callback: function (r) {	
-// 				cur_frm.set_value("billing_period", r.message.billing_period);
-// 				cur_frm.set_value("start_date_of_accounting_period",r.message.start_date_of_billing_period);
-// 				cur_frm.set_value("end_date_of_accounting_period",r.message.end_date_of_billing_period);
-// 			}
-// 		});
-// 	}
-// });
-
-
 /*function that sets the fields of the sales invoice*/
 frappe.ui.form.on("Sales Invoice","customer",function(frm){ 
 		console.log("on sales invoice")
 		set_customer_details() /*set customer details etc*/
 
-		// frappe.call({
-		// 	"method": "frappe.client.get",
-        //     args: {
-        //         doctype: "Customer",
-		// 		filters: {"Name":frm.doc.customer} 
-        //     },
-        //     callback: function (data) {
-				
-		// 		// set customer details and readings
-		// 		frm.set_value("area",data.message.area);
-		// 		frm.set_value("zone",data.message.zone);
-		// 		frm.set_value("route",data.message.route);
-		// 		frm.set_value("tariff_category",data.message.tariff_category);
-		// 		frm.set_value("disconnection_profile",data.message.disconnection_profile);
-		// 		frm.set_value("tel_no",data.message.tel_no);
-		// 		frm.set_value("account_no",data.message.new_account_no);
-		// 		frm.set_value("territory",data.message.territory);
-				
-				// frappe.call({
-				// 	"method": "frappe.client.get",
-				// 	args: {
-				// 		doctype: "Disconnection Profile",
-				// 		filters: {disconnection_name: data.message.disconnection_profile}   
-				// 	},
-				// 	callback: function (f) {
-				// 		if (frm.doc.type_of_invoice == "bill"){ 
-				// 			cur_frm.set_value("due_date", frappe.datetime.add_days(frm.doc.posting_date, +f.message.disconnection_days));
-								
-				// 			// add values to child table item
-				// 			frappe.call({
-				// 					"method": "frappe.client.get_list",
-				// 					args:{	
-				// 						doctype: "Item",
-				// 						filters: {
-				// 							'item_group':["=", frm.doc.tariff_category]
-				// 						},
-				// 					},
-						
-				// 					callback: function(r) {
-				// 						cur_frm.clear_table("items"); 
-				// 						cur_frm.refresh_field("items");
-
-				// 						var cur_consumption = frm.doc.consumption
-						
-				// 						$.each(r.message || [], function(i, v){	
-				// 							frappe.call({
-				// 								"method": "frappe.client.get",
-				// 								args: {
-				// 									doctype: "Item",
-				// 									filters: {"item_code":v.name}   
-				// 								},
-				// 								callback: function (datas) {
-				// 									var current_max_quantity = datas.message.max_quantity
-				// 									var current_min_quantity = datas.message.min_quantity
-				// 									var current_item_type = datas.message.type_of_item
-													
-				// 									if(current_min_quantity<=cur_consumption && current_item_type =="Tariff" ){
-				// 										// some units are within this category
-				// 										if(current_max_quantity<=cur_consumption){
-				// 											if(current_min_quantity == 0){
-				// 												var tariff_consumption = current_max_quantity - current_min_quantity
-				// 												// add rows below
-				// 												cur_frm.grids[0].grid.add_new_row(null,null,false);
-				// 												cur_frm.refresh_field("items");
-				// 												var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-				// 												newrow.item_code=v.name
-				// 												newrow.qty = tariff_consumption
-				// 												newrow.item_name=v.name
-				// 												newrow.description=v.name
-				// 												newrow.uom='m3'
-				// 												newrow.income_account='Cost of Goods Sold - U'
-				// 												newrow.uom_conversion_factor= 1
-
-				// 											}
-				// 											else if(current_max_quantity == -1){
-				// 												var tariff_consumption = cur_consumption - current_min_quantity +1
-				// 												// add rows below
-				// 												cur_frm.grids[0].grid.add_new_row(null,null,false);
-				// 												cur_frm.refresh_field("items");
-				// 												var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-				// 												newrow.item_code=v.name
-				// 												newrow.qty = tariff_consumption
-				// 												newrow.item_name=v.name
-				// 												newrow.description=v.name
-				// 												newrow.uom='m3'
-				// 												newrow.income_account='Cost of Goods Sold - U'
-				// 												newrow.uom_conversion_factor= 1
-
-				// 											}
-				// 											else{
-				// 												var tariff_consumption = current_max_quantity - current_min_quantity +1
-				// 												// add rows below
-				// 												cur_frm.grids[0].grid.add_new_row(null,null,false);
-				// 												cur_frm.refresh_field("items");
-				// 												var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-				// 												newrow.item_code=v.name
-				// 												newrow.qty = tariff_consumption
-				// 												newrow.item_name=v.name
-				// 												newrow.description=v.name
-				// 												newrow.uom='m3'
-				// 												newrow.income_account='Cost of Goods Sold - U'
-				// 												newrow.uom_conversion_factor= 1
-				// 											}
-				// 										}
-				// 										else if(current_max_quantity > cur_consumption){
-				// 											if(current_min_quantity == 0){
-				// 												var tariff_consumption = cur_consumption - current_min_quantity
-				// 												// add rows below
-				// 												cur_frm.grids[0].grid.add_new_row(null,null,false);
-				// 												cur_frm.refresh_field("items");
-				// 												var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-				// 												newrow.item_code=v.name
-				// 												newrow.qty = tariff_consumption
-				// 												newrow.item_name=v.name
-				// 												newrow.description=v.name
-				// 												newrow.uom='m3'
-				// 												newrow.income_account='Cost of Goods Sold - U'
-				// 												newrow.uom_conversion_factor= 1
-				// 											}
-				// 											else{
-				// 												var tariff_consumption = cur_consumption - current_min_quantity +1
-				// 												// add rows below
-				// 												cur_frm.grids[0].grid.add_new_row(null,null,false);
-				// 												cur_frm.refresh_field("items");
-				// 												var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-				// 												newrow.item_code=v.name
-				// 												newrow.qty = tariff_consumption
-				// 												newrow.item_name=v.name
-				// 												newrow.description=v.name
-				// 												newrow.uom='m3'
-				// 												newrow.income_account='Cost of Goods Sold - U'
-				// 												newrow.uom_conversion_factor= 1
-				// 											}
-				// 										}
-				// 									}
-				// 									// add the meter rent
-				// 									else if(current_item_type == "Meter"){
-				// 										console.log("This a meter")
-
-				// 										// add rows below
-				// 										cur_frm.grids[0].grid.add_new_row(null,null,false);
-				// 										cur_frm.refresh_field("items");
-				// 										var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-				// 										newrow.item_code=v.name
-				// 										newrow.qty = 1
-				// 										newrow.item_name=v.name
-				// 										newrow.description=v.name
-				// 										newrow.uom='m3'
-				// 										newrow.income_account='Cost of Goods Sold - U'
-				// 										newrow.uom_conversion_factor= 1
-				// 									}
-				// 									else{
-				// 										// skip the tariff dont create a row here
-				// 									}
-				// 								}	
-				// 							});
-				// 							// save the form once it finishes looping through the table
-				// 							cur_frm.save()
-				// 				})				
-				// 			}
-				// 			});
-				// 		}
-				// 	}
-				// });
-  			// }
-		//    });
 });
  
 
-//  //if(!frm.doc.start_date_of_accounting_period) {
-//           //  frm.set_value("start_date_of_accounting_period",
-//           //  moment().startOf("month").format());
-//        // }
-//         //if(!frm.doc.end_date_of_accounting_period) {
-//           //  frm.set_value("end_date_of_accounting_period",
-//             //moment().endOf("month").format());
-//        // }
-//     //},
-
-//     //entries_add: function(frm, child_doctype, child_name) {
-//       //  var row = frappe.model.get_doc(child_doctype, child_name);
-//         //upande.set_accounting_period(row, frm.doc);
-//         //cur_frm.refresh_field("items");
-//     //},
-//     //entries_on_form_rendered: function(frm) {
-//       //  var cur_grid = cur_frm.cur_grid;
-//         //var row = cur_grid.doc;
-//         //var ro = row.water_use_fee
-//           //  && upande.get_rate(row.water_use_fee) != 0.1;
-//         //cur_grid.grid.get_docfield(
-//           //  "total_amount_allocated_for_accounting_period").read_only = ro;
-//         //cur_grid.grid.get_docfield("consumption").read_only = ro;
-//        // cur_grid.refresh_field("total_amount_allocated_for_accounting_period");
-//         //cur_grid.refresh_field("consumption");
-//     //}
-// //});
-
-
-// // frappe.ui.form.on("Sales Invoice Item", {
-// //     item_code: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     },
-// //     start_date_of_accounting_period: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     },
-// //     end_date_of_accounting_period: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     },
-// //     water_use_fee: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     },
-// //     consumption: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     },
-// //     meter_reading_start: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     },
-// //     meter_reading_end: function(frm, child_doctype, child_name) {
-// //         upande.recalculate(frm.doc, child_doctype, child_name)
-// //     }
-// // });
-  
-
-// cur_frm.add_fetch('customer','area','area')
-// cur_frm.add_fetch('customer','zone','zone')
-// cur_frm.add_fetch('customer','route','route')
-// cur_frm.add_fetch('customer','new_account_no','account_no')
-
-
-// cur_frm.add_fetch('customer','deposit','deposit')
-// cur_frm.add_fetch('customer','new_connection_fee','new_connection_fee')
-// cur_frm.add_fetch('customer','tel_no','tel_no')
-// cur_frm.add_fetch('customer','disconnection_profile','disconnection_profile')
-// cur_frm.add_fetch('customer','tariff_category','tariff_category')
-
-
-// frappe.ui.form.on("Sales Invoice", "tariff_category", function(frm){
-//  	if (frm.doc.type_of_invoice == "bill"){ 
-// 	frappe.call({
-//     		method: "frappe.client.get_list",
-//     		args:{	
-//     			doctype: "Item",
-//                 filters: {
-// 					'item_group':["=", frm.doc.tariff_category]
-// 				},
-// 			},
-
-//     		callback: function(r) {
-// 				cur_frm.clear_table("items"); 
-// 				cur_frm.refresh_field("items");
-// 				var cur_consumption = frm.doc.consumption
-// 				var calculated_consumption = frm.doc.consumption
-// 				var maximum_quantity
-
-//  				$.each(r.message || [], function(i, v){	
-// 					cur_frm.grids[0].grid.add_new_row(null,null,false);
-// 					cur_frm.refresh_field("items");
-//     				var newrow = cur_frm.grids[0].grid.grid_rows[cur_frm.grids[0].grid.grid_rows.length - 1].doc;
-// 					var str = v.name;
-// 					var n = str.length;
-// 					var n1 = str.indexOf("-");
-// 					var maxnumbers= (n-n1)* 1
-// 					var maxvalues = str.substr(n1+1, maxnumbers);
-// 					var minvalues = str.substr(0, n1);
-
-// 					newrow.item_code=v.name
-// 					newrow.qty = cur_consumption
-
-// 					newrow.item_name=v.name
-// 					newrow.description=v.name
-// 					newrow.uom='m3'
-// 					newrow.income_account='Cost of Goods Sold - U'
-// 					newrow.uom_conversion_factor= 1
-
-// 				frappe.call({
-//             		"method": "frappe.client.get",
-// 					args: {
-// 						doctype: "Item",
-// 						filters: {"item_code":v.name}   
-// 					},
-//             		callback: function (datas) {
-// 						newrow.rate = datas.message.standard_rate
-// 						var realvalue=maxvalues-minvalues
-
-// 						if (datas.message.max_quantity==realvalue){
-// 							cur_consumption= frm.doc.consumption - (minvalues-1)
-
-// 							if (minvalues <= 0){
-// 								cur_consumption=maxvalues
-// 							}
-// 							else if(cur_consumption <= datas.message.max_quantity){cur_consumption=cur_consumption}
-// 						if (cur_consumption >= datas.message.max_quantity)
-// 						{
-// 						if (minvalues <= 0){cur_consumption=(datas.message.max_quantity* 1)}
-// 						else{cur_consumption=(datas.message.max_quantity* 1) + 1}
-
-// 						}
-// 					}
-// 					else {
-// 						cur_consumption=0
-// 					}
-// 					if (cur_consumption <0){cur_consumption=0}
-
-// 					if (maxvalues >0){}
-// 					else{
-// 						minvalues = str.substr(0, 4);
-// 						minvalues=(minvalues * 1)
-// 						var frmcons =frm.doc.consumption* 1
-// 						if (frmcons > minvalues){cur_consumption=frm.doc.consumption-(minvalues-1)}
-// 						else {cur_consumption=0}
-// 					}
-
-// 					newrow.rate = datas.message.standard_rate
-// 					newrow.qty = cur_consumption
-// 					cur_frm.refresh_field("items");
-// 					cur_consumption=0;
-
-// 			}
-//     });
-// 	// end of each r.message
-// 	})
-// 	// end of starting frappe
-// 	}
-// 	});
-// 	// end of if
-// 	}
-// 	cur_frm.save();
-// 	//cur_frm.submit();
-// });
 
 
 
