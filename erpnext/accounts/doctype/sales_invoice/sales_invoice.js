@@ -1110,6 +1110,7 @@ var currentrow = 0;
 var customer_meter_no
 var disconnection_profiles
 var defined_flat_rate = "0-6"
+var defined_grace_period = 14
 // 
 // function that adds rows to items child table
 function add_rows_and_values(i,current_item_name){
@@ -1124,6 +1125,35 @@ function alert_message(message_to_print){
 }
 
 
+// function that converts a string date to a date object
+function parse_date(current_date){
+    var split_date = current_date.split("-")
+    var current_month = parseInt(split_date[1])-1
+    var date_object = new Date(split_date[0],current_month, split_date[2])
+    return date_object
+}
+
+// function that sets the disconnection date
+function set_disconnection_date(){
+	// check if date is already set 
+	var days_difference_in_secs = parse_date(cur_frm.doc.due_date) - parse_date(cur_frm.doc.posting_date)
+	var days_difference = days_difference_in_secs/86400000
+
+	if(days_difference < defined_grace_period && cur_frm.type_of_invoice == "bill"){
+		cur_frm.clear_table("payment_schedule"); 
+		cur_frm.refresh_field("payment_schedule");
+
+		// add number of days difined in defined_grace_period
+		var someDate = new Date();
+		someDate.setDate(someDate.getDate() + defined_grace_period); 
+		cur_frm.set_value("due_date",someDate)
+	}
+	else{
+		// do nothing because the date is already set
+	}	
+}
+
+
 // function that sets the general customer details
 function set_general_details(data){
 	cur_frm.set_value("area",data.message.area);
@@ -1134,6 +1164,7 @@ function set_general_details(data){
 	cur_frm.set_value("tel_no",data.message.tel_no);
 	cur_frm.set_value("account_no",data.message.new_account_no);
 	cur_frm.set_value("territory",data.message.territory);
+
 }
 
 			
@@ -1292,7 +1323,8 @@ function get_the_next_customer(){
 						"billing_period":cur_frm.doc.billing_period,
 						"type_of_invoice":"bill",
 						"customer":current_customer_details.customer_name,
-						"tariff_category":current_customer_details.type_of_customer
+						"tariff_category":current_customer_details.type_of_customer,
+						"from_finish_capture":"true"
 					}
 				
 					frappe.set_route("Form", "Sales Invoice","New Sales Invoice currentrow")
@@ -1316,8 +1348,16 @@ function set_customer_details(){
 		},
 		callback: function (data) {
 			set_general_details(data) /* set customer details and readings*/
-			add_items() /*add values to child table items*/
-			get_the_next_customer()/* get the next customer from meter reading capture*/
+			
+			// check if from finish capture
+			if (cur_frm.doc.from_finish_capture){
+				add_items() /*add values to child table items*/
+				get_the_next_customer()/* get the next customer from meter reading capture*/
+			}
+			else{
+				console.log("not defined")
+			}
+			
 		}
 	})
 }
@@ -1332,22 +1372,21 @@ reload to perform various action*/
 /*function that acts when the readings field under meter reading sheet is
 filled*/
 
-/*this is the refresh function triggered by refreshing the form*/
-frappe.ui.form.on("Meter Reading Capture", "refresh", function(frm) {
-	console.log("refreshing")
-});
-
-frappe.ui.form.on("Meter Reading Capture", "onload", function(frm) {
-	console.log("onload functionality")
-});
-
-/*function that sets the fields of the sales invoice*/
+// the function below is the main function that that calls all the
+// other functions to fill the document it is triggered by filling
+// the customer field
 frappe.ui.form.on("Sales Invoice","customer",function(frm){ 
-		console.log("on sales invoice")
 		set_customer_details() /*set customer details etc*/
-
 });
  
+
+frappe.ui.form.on("Sales Invoice", "refresh", function(frm) {
+	console.log("refresh functionality")
+
+	// set the disconnection date
+	set_disconnection_date()
+	
+})
 
 
 
