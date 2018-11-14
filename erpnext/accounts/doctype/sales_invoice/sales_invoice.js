@@ -1208,7 +1208,7 @@ function add_meter_rent(tariff_category){
 			},
 			fields:["name"]
 		},
-		callback: function(response) {	
+		callback: function(response) {
 			// add a new row for meter rent
 			cur_frm.grids[0].grid.add_new_row(null,null,false);
 			cur_frm.refresh_field("items");
@@ -1245,11 +1245,15 @@ function loop_through_tariffs(response){
 		if(cur_frm.doc.consumption){
 			if(cur_frm.doc.consumption >=current_item.min_quantity){
 				var units_within_category = cur_frm.doc.consumption - current_item.min_quantity
+				console.log("units within category")
+				console.log(current_item)
+				console.log(units_within_category)
 				if(units_within_category > 0 ){
-					if(units_within_category>=current_item.max_quantity){
+					if(units_within_category>=current_item.difference_btw_max_and_min){
 						add_row_and_values(i,list_of_items,current_item.difference_btw_max_and_min)
 					}
 					else{
+						console.log("Going for the final row")
 						add_row_and_values(i,list_of_items,units_within_category +1)
 					}
 				}
