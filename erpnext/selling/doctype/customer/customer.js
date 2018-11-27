@@ -209,15 +209,18 @@ function add_custom_buttons(button_name,new_status){
 }
 
 // function that sets filters for the different territory fields
-function filter_field(field,filter_name){
+function filter_field(field,filter_name1,filter_name2){
 	cur_frm.set_query(field, function() {
 		return {
 			"filters": {
-				parent_warehouse: filter_name
+				category_of_warehouse:filter_name2
 			}
 		}
 	});
 }
+
+
+
 /*frappe call function that gets a docytype without filters*/
 function get_doctype_without_filters(requested_doctype){
 	frappe.call({
@@ -285,7 +288,8 @@ frappe.ui.form.on("Customer", "refresh", function(frm) {
 	add_custom_buttons("Supercede","Supercede")
 
 	// filter dma by warehouse dma
-	filter_field("dma","DMA Bulk Meter - UL")
+	// filter_field("dma","DMA Bulk Meter - UL")
+	filter_field("dma","DMA Bulk Meter - UL","DMA(Bulk Meter)")
 	
 });
 

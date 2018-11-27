@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 import frappe
+from frappe.model.document import Document
 from frappe.model.naming import set_name_by_naming_series
 from frappe import _, msgprint, throw
 import frappe.defaults
@@ -55,6 +56,13 @@ class Customer(TransactionBase):
 		self.update_lead_status()
 
 	def validate(self):
+		# validate the customer doctype
+		if(self.status == "Active"):
+			check_required_details(self)
+		else: 
+			pass
+		# end of custom scripts section
+		
 		self.flags.is_new_doc = self.is_new()
 		self.flags.old_lead = self.lead_name
 		validate_party_accounts(self)
@@ -383,3 +391,32 @@ def get_customer_primary_address(doctype, txt, searchfield, start, page_len, fil
 			'customer': customer,
 			'txt': '%%%s%%' % txt
 		})
+
+
+
+# ================================================================================================
+
+# the code below are custom controllers for the customer Doctype
+
+
+def check_required_details(self):
+	print "*"*100
+
+	# check previous reading
+	if(self.previous_reading == None):
+		frappe.throw("Customer's Previous Reading Field is Empty")
+	else:
+		pass
+	
+	# check if dma exists
+	if(self.dma == None):
+		frappe.throw("Customer's DMA Field is Empty")
+	else:
+		pass
+
+	if(len(self.accounts)>0):
+		pass
+	else:
+		frappe.throw("Add an Account to This Customer")
+
+	frappe.throw("pause")

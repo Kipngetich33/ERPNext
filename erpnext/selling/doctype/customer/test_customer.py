@@ -24,6 +24,10 @@ class TestCustomer(unittest.TestCase):
 		if not frappe.get_value('Item', '_Test Item'):
 			make_test_records('Item')
 
+		# custom scripts
+		# set up test_customers
+
+
 	def tearDown(self):
 		frappe.db.set_value("Customer", '_Test Customer', 'credit_limit', 0.0)
 
@@ -221,3 +225,7 @@ def get_customer_dict(customer_name):
 		 "doctype": "Customer",
 		 "territory": "_Test Territory"
 	}
+
+
+# class TestCustomer1(unittest.TestCase):
+# 	pass

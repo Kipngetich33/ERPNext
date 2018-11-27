@@ -71,6 +71,7 @@ class SalesInvoice(SellingController):
 			self.indicator_title = _("Paid")
 
 	def validate(self):
+		testing_extra()
 		super(SalesInvoice, self).validate()
 		self.validate_auto_set_posting_time()
 
@@ -1371,3 +1372,10 @@ def get_loyalty_programs(customer):
 		return []
 	else:
 		return lp_details
+
+
+# ========================================================================================
+# the code below is for a custom controller
+def testing_extra():
+	print "*"*100
+	print "testing site"
