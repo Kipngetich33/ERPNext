@@ -253,25 +253,8 @@ function if_system_number(){
 /*Functionality that sets the value of form query 'route' 
 to show only routes*/
 frappe.ui.form.on("Customer", "refresh", function(frm) {
-	// check or set system no
-	frappe.call({
-		method: 'frappe.client.get',
-		args: {
-			doctype:"Customer System Number",
-		},
-		callback: function(response) {
-			if(if_system_number()){
-				latest_customer_sys_no = frm.doc.system_no
-			}
-			else{
-				cur_frm.set_value("system_no",response.message.customer_number +1)	
-				latest_customer_sys_no = response.message.customer_number	
-			}
-			
-		}
-	});
-	// end of check or set system number
-
+	console.log("Running through js")
+	
 	// sets the value of the country/territory query field
 	set_country("territory","Country")
 	set_country("area","Area")

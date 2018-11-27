@@ -56,11 +56,18 @@ class Customer(TransactionBase):
 		self.update_lead_status()
 
 	def validate(self):
+		print "8"*100
+		print "Runnig validate"
+
 		# validate the customer doctype
 		if(self.status == "Active"):
 			check_required_details(self)
+			pass
 		else: 
 			pass
+
+		# add customers system number
+		add_customer_system_no(self)
 		# end of custom scripts section
 		
 		self.flags.is_new_doc = self.is_new()
@@ -84,6 +91,8 @@ class Customer(TransactionBase):
 				frappe.flags.customer_group_changed = True
 
 	def on_update(self):
+		print "*"*100
+		print "Running update"
 		self.validate_name_with_customer_group()
 		self.create_primary_contact()
 		self.create_primary_address()
@@ -95,6 +104,9 @@ class Customer(TransactionBase):
 			self.create_lead_address_contact()
 
 		self.update_customer_groups()
+		# add custom functionality to set 
+
+		
 
 	def update_customer_groups(self):
 		ignore_doctypes = ["Lead", "Opportunity", "POS Profile", "Tax Rule", "Pricing Rule"]
@@ -400,8 +412,6 @@ def get_customer_primary_address(doctype, txt, searchfield, start, page_len, fil
 
 
 def check_required_details(self):
-	print "*"*100
-
 	# check previous reading
 	if(self.previous_reading == None):
 		frappe.throw("Customer's Previous Reading Field is Empty")
@@ -419,4 +429,34 @@ def check_required_details(self):
 	else:
 		frappe.throw("Add an Account to This Customer")
 
-	frappe.throw("pause")
+
+def add_customer_system_no(self):
+	'''
+	Function that checks the last customer system,
+	determine the current customer system no and 
+	adds it to customer document
+	'''
+	print "*"*100
+	print "Determining Customer Number"
+	self_system_no = self.system_no
+	current_system_no1 = get_current_system_no()
+	if(self_system_no):
+		'''check if it greater than current
+		system no in customer system no'''
+		if(self_system_no>current_system_no1):
+			self.system_no = current_system_no1 +1
+		else:
+			pass
+	else:
+		# create a new system_no
+		self.system_no = current_system_no1 +1
+	
+
+def get_current_system_no():
+	'''
+	Function that returns the value
+	in the customer system no
+	'''
+	current_system_no = frappe.db.get_value("Customer System Number","*","*",as_dict=True)
+	return int(current_system_no.customer_number)
+	
