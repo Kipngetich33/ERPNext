@@ -56,19 +56,14 @@ class Customer(TransactionBase):
 		self.update_lead_status()
 
 	def validate(self):
-		print "8"*100
-		print "Runnig validate"
-
 		# validate the customer doctype
 		if(self.status == "Active"):
 			check_required_details(self)
 			pass
 		else: 
 			pass
-
 		# add customers system number
 		add_customer_system_no(self)
-		# end of custom scripts section
 		
 		self.flags.is_new_doc = self.is_new()
 		self.flags.old_lead = self.lead_name
@@ -76,6 +71,7 @@ class Customer(TransactionBase):
 		self.validate_credit_limit_on_change()
 		self.set_loyalty_program()
 		self.check_customer_group_change()
+
 
 		# set loyalty program tier
 		if frappe.db.exists('Customer', self.name):
@@ -91,8 +87,6 @@ class Customer(TransactionBase):
 				frappe.flags.customer_group_changed = True
 
 	def on_update(self):
-		print "*"*100
-		print "Running update"
 		self.validate_name_with_customer_group()
 		self.create_primary_contact()
 		self.create_primary_address()
@@ -104,8 +98,8 @@ class Customer(TransactionBase):
 			self.create_lead_address_contact()
 
 		self.update_customer_groups()
-		# add custom functionality to set 
-
+		# save new customer system number
+		save_new_system_no(self)
 		
 
 	def update_customer_groups(self):
@@ -436,8 +430,6 @@ def add_customer_system_no(self):
 	determine the current customer system no and 
 	adds it to customer document
 	'''
-	print "*"*100
-	print "Determining Customer Number"
 	self_system_no = self.system_no
 	current_system_no1 = get_current_system_no()
 	if(self_system_no):
@@ -460,3 +452,25 @@ def get_current_system_no():
 	current_system_no = frappe.db.get_value("Customer System Number","*","*",as_dict=True)
 	return int(current_system_no.customer_number)
 	
+
+def save_new_system_no(self):
+	'''
+	Function that  saves a new system number when 
+	a new customer record is made
+	'''
+	print "*"*100
+	self_system_no = self.system_no
+	current_system_no1 = get_current_system_no()
+	if(self_system_no):
+		'''check if it greater than current
+		system no in customer system no'''
+		if(self_system_no>current_system_no1):
+			doc = frappe.get_doc("Customer System Number","*")
+			print doc.customer_number
+			doc.customer_number = doc.customer_number + 1
+			doc.save()
+		else:
+			pass
+	else:
+		# create a new system_no
+		print "no system no yet"

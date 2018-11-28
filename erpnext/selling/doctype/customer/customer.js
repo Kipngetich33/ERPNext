@@ -290,26 +290,6 @@ frappe.ui.form.on("Customer", "new_project", function(frm) {
 });
 
 
-/*after save fucntion */
-frappe.ui.form.on("Customer",{
-	after_save:function(){
-		if(parseInt(cur_frm.doc.system_no) <= parseInt(latest_customer_sys_no)){
-			// do nothing number exists
-		}
-		else{
-			frappe.call({
-				"method": "frappe.client.set_value",
-				"args": {
-					"doctype": "Customer System Number",
-					"name": "customer_number",
-					"fieldname": "customer_number",
-					"value": parseInt(cur_frm.doc.system_no)
-				}
-			});
-		}
-	}
-});
-
 /*save function */
 frappe.ui.form.on("Customer", "create_application", function(frm) {
 	if(cur_frm.doc.status == "Pending Application"){
