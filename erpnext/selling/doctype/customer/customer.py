@@ -466,7 +466,6 @@ def save_new_system_no(self):
 		system no in customer system no'''
 		if(self_system_no>current_system_no1):
 			doc = frappe.get_doc("Customer System Number","*")
-			print doc.customer_number
 			doc.customer_number = doc.customer_number + 1
 			doc.save()
 		else:

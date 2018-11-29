@@ -299,7 +299,6 @@ frappe.ui.form.on("Customer", "create_application", function(frm) {
 	else{
 		alert_message("Cannot Create Project for a Customer whose Status is not Pending")
 	}
-	
 });
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*End of the field triggered functions*/
