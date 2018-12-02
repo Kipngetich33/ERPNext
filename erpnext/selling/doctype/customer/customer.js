@@ -165,7 +165,7 @@ function alert_message(message_to_print){
 // alert function
 function alert_new_project(alert_message){
 	frappe.confirm(
-		alert_message,
+		alert_message("Do You Want to Create a Project for this Customer"),
 		function(){
 			// create a new project
 			frappe.route_options = {"system_no":cur_frm.doc.system_no,"customer":cur_frm.doc.customer_name}
@@ -235,15 +235,6 @@ function get_doctype_without_filters(requested_doctype){
 
 }
 
-/*functions that checks whether a customer number exists*/
-function if_system_number(){
-	if(cur_frm.doc.system_no){
-		return true
-	}
-	else{
-		return false
-	} 
-}
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*end of the general functions section*/
 

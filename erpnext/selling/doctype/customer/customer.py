@@ -57,14 +57,6 @@ class Customer(TransactionBase):
 
 	def validate(self):
 		# validate the customer doctype
-		if(self.status == "Active"):
-			check_required_details(self)
-			pass
-		else: 
-			pass
-		# add customers system number
-		add_customer_system_no(self)
-		
 		self.flags.is_new_doc = self.is_new()
 		self.flags.old_lead = self.lead_name
 		validate_party_accounts(self)
@@ -78,6 +70,15 @@ class Customer(TransactionBase):
 			customer = frappe.get_doc('Customer', self.name)
 			if self.loyalty_program == customer.loyalty_program and not self.loyalty_program_tier:
 				self.loyalty_program_tier = customer.loyalty_program_tier
+
+		# save new customer system number
+		if(self.status == "Active"):
+			check_required_details(self)
+		else: 
+			pass
+		# add customers system number n save
+		add_customer_system_no(self)
+		save_new_system_no(self)
 
 	def check_customer_group_change(self):
 		frappe.flags.customer_group_changed = False
@@ -98,8 +99,7 @@ class Customer(TransactionBase):
 			self.create_lead_address_contact()
 
 		self.update_customer_groups()
-		# save new customer system number
-		save_new_system_no(self)
+		
 		
 
 	def update_customer_groups(self):
@@ -418,6 +418,7 @@ def check_required_details(self):
 	else:
 		pass
 
+	# check if account exists
 	if(len(self.accounts)>0):
 		pass
 	else:
@@ -427,21 +428,23 @@ def check_required_details(self):
 def add_customer_system_no(self):
 	'''
 	Function that checks the last customer system,
-	determine the current customer system no and 
-	adds it to customer document
+	determine if the current customer system no is greater
+	than the last before adding it to current document
 	'''
-	self_system_no = self.system_no
-	current_system_no1 = get_current_system_no()
-	if(self_system_no):
+	print "*"*100
+	last_saved_system_no = get_current_system_no()
+	current_customer_no = self.system_no
+	
+	if(current_customer_no):
 		'''check if it greater than current
 		system no in customer system no'''
-		if(self_system_no>current_system_no1):
-			self.system_no = current_system_no1 +1
+		if(int(current_customer_no) > last_saved_system_no):
+			self.system_no = last_saved_system_no +1
 		else:
 			pass
 	else:
 		# create a new system_no
-		self.system_no = current_system_no1 +1
+		self.system_no = last_saved_system_no +1
 	
 
 def get_current_system_no():
@@ -458,13 +461,12 @@ def save_new_system_no(self):
 	Function that  saves a new system number when 
 	a new customer record is made
 	'''
-	print "*"*100
 	self_system_no = self.system_no
 	current_system_no1 = get_current_system_no()
 	if(self_system_no):
 		'''check if it greater than current
 		system no in customer system no'''
-		if(self_system_no>current_system_no1):
+		if(int(self_system_no) > current_system_no1):
 			doc = frappe.get_doc("Customer System Number","*")
 			doc.customer_number = doc.customer_number + 1
 			doc.save()
@@ -472,4 +474,4 @@ def save_new_system_no(self):
 			pass
 	else:
 		# create a new system_no
-		print "no system no yet"
+		print "Something went wrong with the add_customer_system_no function"
