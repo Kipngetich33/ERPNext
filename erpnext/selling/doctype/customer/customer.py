@@ -424,14 +424,12 @@ def check_required_details(self):
 	else:
 		frappe.throw("Add an Account to This Customer")
 
-
 def add_customer_system_no(self):
 	'''
 	Function that checks the last customer system,
 	determine if the current customer system no is greater
 	than the last before adding it to current document
 	'''
-	print "*"*100
 	last_saved_system_no = get_current_system_no()
 	current_customer_no = self.system_no
 	
@@ -474,4 +472,4 @@ def save_new_system_no(self):
 			pass
 	else:
 		# create a new system_no
-		print "Something went wrong with the add_customer_system_no function"
+		frappe.throw("Something went wrong with the add_customer_system_no function")
